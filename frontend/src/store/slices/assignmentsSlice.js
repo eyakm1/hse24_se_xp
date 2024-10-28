@@ -19,6 +19,20 @@ export const fetchAssignmentDetail = createAsyncThunk('assignments/fetchAssignme
   }
 });
 
+// Submit assignment
+export const submitAssignment = createAsyncThunk('assignments/submitAssignment', async (formData, { rejectWithValue }) => {
+  try {
+    const response = await api.post('/submissions', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response.data);
+  }
+});
+
 const assignmentsSlice = createSlice({
   name: 'assignments',
   initialState: {
@@ -51,6 +65,17 @@ const assignmentsSlice = createSlice({
         state.detail = action.payload;
       })
       .addCase(fetchAssignmentDetail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(submitAssignment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(submitAssignment.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(submitAssignment.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

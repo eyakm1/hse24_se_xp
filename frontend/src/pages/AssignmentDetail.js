@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAssignmentDetail } from '../store/slices/assignmentsSlice';
 
@@ -21,6 +21,7 @@ function AssignmentDetail() {
           <h1>{detail.title}</h1>
           <p>{detail.description}</p>
           <p>Due Date: {detail.dueDate}</p>
+          <Link to={`/assignments/${id}/submit`}>Submit Assignment</Link>
         </div>
       )}
     </div>
