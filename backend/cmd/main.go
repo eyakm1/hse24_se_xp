@@ -18,12 +18,11 @@ import (
 )
 
 const (
-	gPort = ":50054"
 	hPort = ":9000"
 )
 
 func main() {
-	adApp := app.NewApp(repo.New())
+	adApp := app.NewApp(repo.New(), repo.New(), repo.New())
 
 	httpServer := httpgin.NewHTTPServer(hPort, adApp)
 
