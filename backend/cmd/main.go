@@ -23,7 +23,7 @@ const (
 )
 
 func main() {
-	adApp := app.NewApp(repo.New())
+	adApp := app.NewApp(repo.New(), repo.New(), repo.New())
 
 	httpServer := httpgin.NewHTTPServer(hPort, adApp)
 
