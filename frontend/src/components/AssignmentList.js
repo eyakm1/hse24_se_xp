@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 function AssignmentList({ assignments }) {
   return (
@@ -10,6 +11,7 @@ function AssignmentList({ assignments }) {
             <h3>{assignment.title}</h3>
             <p>{assignment.description}</p>
             <p>Due: {assignment.dueDate}</p>
+            <Link to={`/assignments/${assignment.id}`}>View Details</Link>
           </li>
         ))}
       </ul>
