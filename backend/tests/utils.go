@@ -7,8 +7,8 @@ import (
 	"hse24_se_xp/app"
 	"hse24_se_xp/ports/httpgin"
 	"hse24_se_xp/repo"
+	"hse24_se_xp/users"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -24,21 +24,29 @@ type testClient struct {
 	BaseURL string
 }
 
-type userResponse struct {
-	ID    int64  `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+type userData struct {
+	ID    int64      `json:"id"`
+	Name  string     `json:"name"`
+	Email string     `json:"email"`
+	Role  users.Role `json:"role"`
 }
 
-type courseResponse struct {
+type userResponse struct {
+	Data userData `json:"data"`
+}
+
+type courseData struct {
 	ID               int64   `json:"id"`
 	Name             string  `json:"name"`
 	TeacherID        int64   `json:"teacher_id"`
 	EnrolledStudents []int64 `json:"enrolled_students"`
 }
 
-type assignmentResponse struct {
+type courseResponse struct {
+	Data courseData `json:"data"`
+}
+
+type assignmentData struct {
 	ID          int64     `json:"id"`
 	CourseID    int64     `json:"course_id"`
 	Title       string    `json:"title"`
@@ -46,7 +54,11 @@ type assignmentResponse struct {
 	DueDate     time.Time `json:"due_date"`
 }
 
-type submissionResponse struct {
+type assignmentResponse struct {
+	Data assignmentData `json:"data"`
+}
+
+type submissionData struct {
 	ID           int64  `json:"id"`
 	AssignmentID int64  `json:"assignment_id"`
 	StudentID    int64  `json:"student_id"`
@@ -55,12 +67,15 @@ type submissionResponse struct {
 	Feedback     string `json:"feedback"`
 }
 
+type submissionResponse struct {
+	Data submissionData `json:"data"`
+}
 type usersResponse struct {
 	Data []userResponse `json:"data"`
 }
 
 type submissionsResponse struct {
-	Data []submissionResponse `json:"data"`
+	Data []submissionData `json:"data"`
 }
 
 func GetTestClient() *testClient {
@@ -94,7 +109,7 @@ func (tc *testClient) getResponse(req *http.Request, out any) error {
 		return fmt.Errorf("unable to read response: %w", err)
 	}
 
-	err = json.Unmarshal(respBody, out)
+	err = json.Unmarshal(respBody, &out)
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal: %w", err)
 	}
@@ -102,7 +117,7 @@ func (tc *testClient) getResponse(req *http.Request, out any) error {
 	return nil
 }
 
-func (tc *testClient) CreateUser(name, email, role string) (userResponse, error) {
+func (tc *testClient) CreateUser(name string, email string, role int) (userResponse, error) {
 	body := map[string]any{
 		"name":  name,
 		"email": email,
@@ -135,7 +150,7 @@ func (tc *testClient) CreateCourse(name string, teacherID int64) (courseResponse
 		"teacher_id": teacherID,
 	}
 	bodyBytes, _ := json.Marshal(body)
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/courses", tc.BaseURL), bytes.NewBuffer(bodyBytes))
+	req, _ := http.NewRequest(http.MethodPost, tc.BaseURL+"/api/v1/users", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp courseResponse
@@ -149,7 +164,7 @@ func (tc *testClient) EnrollStudent(courseID, studentID int64) error {
 		"student_id": studentID,
 	}
 	bodyBytes, _ := json.Marshal(body)
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/courses/enroll", tc.BaseURL), bytes.NewBuffer(bodyBytes))
+	req, _ := http.NewRequest(http.MethodPost, tc.BaseURL+"/api/v1/users", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	return tc.getResponse(req, nil)
@@ -163,7 +178,7 @@ func (tc *testClient) CreateAssignment(courseID int64, title, description string
 		"due_date":    dueDate,
 	}
 	bodyBytes, _ := json.Marshal(body)
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/assignments", tc.BaseURL), bytes.NewBuffer(bodyBytes))
+	req, _ := http.NewRequest(http.MethodPost, tc.BaseURL+"/api/v1/users", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp assignmentResponse
@@ -171,18 +186,18 @@ func (tc *testClient) CreateAssignment(courseID int64, title, description string
 	return resp, err
 }
 
-func (tc *testClient) SubmitAssignment(assignmentID, studentID int64, fileData []byte, fileName string) error {
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-	part, _ := writer.CreateFormFile("file", fileName)
-	part.Write(fileData)
-	writer.Close()
+// func (tc *testClient) SubmitAssignment(assignmentID, studentID int64, fileData []byte, fileName string) error {
+// 	body := new(bytes.Buffer)
+// 	writer := multipart.NewWriter(body)
+// 	part, _ := writer.CreateFormFile("file", fileName)
+// 	part.Write(fileData)
+// 	writer.Close()
 
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/assignments/%d/submit/%d", tc.BaseURL, assignmentID, studentID), body)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
+// 	req, _ := http.NewRequest(http.MethodPost, tc.BaseURL+"/api/v1/users", bytes.NewReader(bodyBytes))
+// 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	return tc.getResponse(req, nil)
-}
+// 	return tc.getResponse(req, nil)
+// }
 
 func (tc *testClient) GradeAssignment(assignmentID, teacherID, studentID int64, grade int, feedback string) error {
 	body := map[string]any{
@@ -193,14 +208,14 @@ func (tc *testClient) GradeAssignment(assignmentID, teacherID, studentID int64, 
 		"feedback":      feedback,
 	}
 	bodyBytes, _ := json.Marshal(body)
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/assignments/%d/grade", tc.BaseURL, assignmentID), bytes.NewBuffer(bodyBytes))
+	req, _ := http.NewRequest(http.MethodPost, tc.BaseURL+"/api/v1/users", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	return tc.getResponse(req, nil)
 }
 
 func (tc *testClient) ListStudents(courseID int64) (usersResponse, error) {
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/courses/%d/students", tc.BaseURL, courseID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/courses/%d/students", tc.BaseURL+"/api/v1", courseID), nil)
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp usersResponse
@@ -209,7 +224,7 @@ func (tc *testClient) ListStudents(courseID int64) (usersResponse, error) {
 }
 
 func (tc *testClient) ListSubmissions(assignmentID int64) (submissionsResponse, error) {
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/assignments/%d/submissions", tc.BaseURL, assignmentID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/assignments/%d/submissions", tc.BaseURL+"/api/v1", assignmentID), nil)
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp submissionsResponse
@@ -218,7 +233,7 @@ func (tc *testClient) ListSubmissions(assignmentID int64) (submissionsResponse, 
 }
 
 func (tc *testClient) GetSubmission(assignmentID, studentID int64) (submissionResponse, error) {
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/assignments/%d/submissions/%d", tc.BaseURL, assignmentID, studentID), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/assignments/%d/submissions/%d", tc.BaseURL+"/api/v1", assignmentID, studentID), nil)
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp submissionResponse
