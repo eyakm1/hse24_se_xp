@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AssignmentDetail from './pages/AssignmentDetail';
 import Submission from './pages/Submission';
+import TeacherDashboard from './pages/TeacherDashboard';
+import AssignmentSubmissions from './pages/AssignmentSubmissions';
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useSelector((state) => state.auth);
@@ -28,6 +30,16 @@ function App() {
       <Route path="/assignments/:id/submit" element={
         <PrivateRoute>
           <Submission />
+        </PrivateRoute>
+      } />
+       <Route path="/teacher-dashboard" element={
+        <PrivateRoute>
+            <TeacherDashboard />
+        </PrivateRoute>
+      } />
+        <Route path="/teacher-dashboard/assignments/:id/submissions" element={
+        <PrivateRoute>
+            <AssignmentSubmissions />
         </PrivateRoute>
       } />
       <Route path="*" element={<Navigate to="/login" />} />
