@@ -1,9 +1,10 @@
 package httpgin
 
 import (
-	"github.com/gin-gonic/gin"
 	"log"
 	"time"
+
+	"github.com/gin-gonic/gin"
 
 	"hse24_se_xp/app"
 )
@@ -22,16 +23,25 @@ func CustomMW(c *gin.Context) {
 func AppRouter(r *gin.RouterGroup, a app.App) {
 	r.Use(CustomMW)
 
-	r.POST("/ads", createAd(a))
-	r.PUT("/ads/:ad_id/status", changeAdStatus(a))
-	r.PUT("/ads/:ad_id", updateAd(a))
-	r.GET("/ads", listAds(a))
-	r.GET("/ads/:ad_id", getAd(a))
-	r.GET("/ads/search/:pattern", searchAds(a))
-	r.DELETE("/ads/:ad_id", deleteAd(a))
-
+	// User routes
 	r.POST("/users", createUser(a))
 	r.PUT("/users/:user_id", updateUser(a))
 	r.GET("/users/:user_id", getUser(a))
 	r.DELETE("/users/:user_id", deleteUser(a))
+
+	// Course routes
+	r.POST("/courses", createCourse(a))
+	r.POST("/courses/enroll", enrollStudent(a))
+	r.POST("/courses/unenroll", unenrollStudent(a))
+	r.GET("/courses/:teacher_id", listCourses(a))
+	r.GET("/courses/:course_id/students", listStudents(a))
+
+	// Assignment routes
+	r.POST("/assignments", createAssignment(a))
+	r.POST("/assignments/:assignmentId/submit/:studentId", submitAssignment(a))
+	r.POST("/assignments/:assignmentId/grade", gradeAssignment(a))
+	r.GET("/assignments/:course_id", listAssignments(a))
+	r.GET("/assignments/:assignment_id", getAssignment(a))
+	r.GET("/assignments/:assignment_id/submissions", listSubmissions(a))
+	r.GET("/assignments/:assignment_id/submissions/:student_id", getSubmission(a))
 }

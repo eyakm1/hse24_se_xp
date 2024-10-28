@@ -1,7 +1,6 @@
 package httpgin
 
 import (
-	"hse24_se_xp/ads"
 	"hse24_se_xp/app"
 	"hse24_se_xp/users"
 	"time"
@@ -10,15 +9,15 @@ import (
 )
 
 type createUserRequest struct {
-	Name  string   `json:"name"`
-	Email string   `json:"email"`
+	Name  string     `json:"name"`
+	Email string     `json:"email"`
 	Role  users.Role `json:"role"`
 }
 
 type userResponse struct {
-	ID    int64    `json:"id"`
-	Name  string   `json:"name"`
-	Email string   `json:"email"`
+	ID    int64      `json:"id"`
+	Name  string     `json:"name"`
+	Email string     `json:"email"`
 	Role  users.Role `json:"role"`
 }
 
@@ -210,88 +209,6 @@ func SubmissionsSuccessResponse(submissions *[]app.Submission) *gin.H {
 	return &gin.H{
 		"data":  submissionsResponseData,
 		"error": nil,
-	}
-}
-
-// UserSuccessResponse formats the response for a user
-func UserSuccessResponse(user *users.User) *gin.H {
-	return &gin.H{
-		"data": userResponse{
-			ID:    user.ID,
-			Name:  user.Name,
-			Email: user.Email,
-			Role:  user.Role,
-		},
-		"error": nil,
-	}
-}
-
-// CourseSuccessResponse formats the response for a course
-func CourseSuccessResponse(course *Course) *gin.H {
-	return &gin.H{
-		"data": courseResponse{
-			ID:               course.ID,
-			Name:             course.Name,
-			TeacherID:        course.TeacherID,
-			EnrolledStudents: course.EnrolledStudents,
-		},
-		"error": nil,
-	}
-}
-
-// AssignmentSuccessResponse formats the response for an assignment
-func AssignmentSuccessResponse(assignment *Assignment) *gin.H {
-	return &gin.H{
-		"data": assignmentResponse{
-			ID:          assignment.ID,
-			CourseID:    assignment.CourseID,
-			Title:       assignment.Title,
-			Description: assignment.Description,
-			DueDate:     assignment.DueDate,
-		},
-		"error": nil,
-	}
-}
-
-func AdSuccessResponse(ad *ads.Ad) *gin.H {
-	return &gin.H{
-		"data": adResponse{
-			ID:        ad.ID,
-			Title:     ad.Title,
-			Text:      ad.Text,
-			AuthorID:  ad.AuthorID,
-			Published: ad.Published,
-			CreatedAt: ad.CreatedAt,
-			UpdatedAt: ad.UpdatedAt,
-		},
-		"error": nil,
-	}
-}
-
-func AdsSuccessResponse(ads *[]ads.Ad) *gin.H {
-	var adsResponseData []adResponse
-	for i := 0; i < len(*ads); i++ {
-		adsResponseData = append(adsResponseData, adResponse{
-			ID:        (*ads)[i].ID,
-			Title:     (*ads)[i].Title,
-			Text:      (*ads)[i].Text,
-			AuthorID:  (*ads)[i].AuthorID,
-			Published: (*ads)[i].Published,
-			CreatedAt: (*ads)[i].CreatedAt,
-			UpdatedAt: (*ads)[i].UpdatedAt,
-		})
-	}
-
-	return &gin.H{
-		"data":  adsResponseData,
-		"error": nil,
-	}
-}
-
-func AdErrorResponse(err error) *gin.H {
-	return &gin.H{
-		"data":  nil,
-		"error": err.Error(),
 	}
 }
 

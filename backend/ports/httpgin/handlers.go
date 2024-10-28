@@ -1,209 +1,26 @@
 package httpgin
 
 import (
-	"errors"
-	"hse24_se_xp/ads"
 	"hse24_se_xp/app"
-	"hse24_se_xp/users"
+	"io/ioutil"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
-
-func createAd(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody createAdRequest
-
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		ad, err := a.CreateAd(reqBody.Title, reqBody.Text, reqBody.UserID)
-
-		if errors.Is(err, validator.ValidationError) || errors.Is(err, app.DefunctUser) {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
-	}
-}
-
-func changeAdStatus(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody changeAdStatusRequest
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		adID, err := strconv.Atoi(c.Param("ad_id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		ad, err := a.ChangeAdStatus(int64(adID), reqBody.UserID, reqBody.Published)
-
-		if errors.Is(err, app.PermissionDenied) {
-			c.JSON(http.StatusForbidden, AdErrorResponse(err))
-			return
-		} else if errors.Is(err, validator.ValidationError) ||
-			errors.Is(err, app.DefunctUser) || errors.Is(err, app.DefunctAd) {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
-	}
-}
-
-func updateAd(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody updateAdRequest
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		adID, err := strconv.Atoi(c.Param("ad_id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		ad, err := a.UpdateAd(int64(adID), reqBody.UserID, reqBody.Title, reqBody.Text)
-
-		if errors.Is(err, app.PermissionDenied) {
-			c.JSON(http.StatusForbidden, AdErrorResponse(err))
-			return
-		} else if errors.Is(err, validator.ValidationError) ||
-			errors.Is(err, app.DefunctUser) || errors.Is(err, app.DefunctAd) {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
-	}
-}
-
-func getAd(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		adID, err := strconv.Atoi(c.Param("ad_id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		ad, err := a.GetAd(int64(adID))
-
-		if errors.Is(err, app.DefunctAd) {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdSuccessResponse(&ad))
-	}
-}
-
-func deleteAd(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var reqBody deleteAdRequest
-		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		adID, err := strconv.Atoi(c.Param("ad_id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		}
-
-		err = a.DeleteAd(int64(adID), reqBody.UserID)
-		if errors.Is(err, app.PermissionDenied) {
-			c.JSON(http.StatusForbidden, AdErrorResponse(err))
-			return
-		} else if errors.Is(err, validator.ValidationError) || errors.Is(err, app.DefunctUser) {
-			c.JSON(http.StatusBadRequest, AdErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdSuccessResponse(&ads.Ad{}))
-	}
-}
-
-func listAds(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		pubFilter := true
-		if c.Query("published") == "false" {
-			pubFilter = false
-		}
-
-		userFilter, atoiErr := strconv.Atoi(c.Query("user_id"))
-		if atoiErr != nil {
-			userFilter = -1
-		}
-
-		timeFilter, _ := time.Parse(time.RFC3339, c.Query("creation_time"))
-
-		ads, err := a.ListAds(pubFilter, int64(userFilter), timeFilter)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdsSuccessResponse(&ads))
-	}
-}
-
-func searchAds(a app.App) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		pattern := c.Param("pattern")
-
-		ads, err := a.SearchAds(pattern)
-
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, AdErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, AdsSuccessResponse(&ads))
-	}
-}
 
 func createUser(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var reqBody createUserRequest
 
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		user, err := a.CreateUser(reqBody.Name, reqBody.Email)
-
+		user, err := a.CreateUser(reqBody.Name, reqBody.Email, reqBody.Role)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, UserErrorResponse(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
@@ -211,74 +28,140 @@ func createUser(a app.App) gin.HandlerFunc {
 	}
 }
 
-func updateUser(a app.App) gin.HandlerFunc {
+func createCourse(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var reqBody updateUserRequest
+		var reqBody createCourseRequest
+
 		if err := c.ShouldBindJSON(&reqBody); err != nil {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		userID, err := strconv.Atoi(c.Param("user_id"))
+		course, err := a.CreateCourse(reqBody.Name, reqBody.TeacherID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		user, err := a.UpdateUser(int64(userID), reqBody.Name, reqBody.Email)
-
-		if errors.Is(err, app.DefunctUser) {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, UserErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, UserSuccessResponse(&user))
+		c.JSON(http.StatusOK, CourseSuccessResponse(&course))
 	}
 }
 
-func getUser(a app.App) gin.HandlerFunc {
+func enrollStudent(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := strconv.Atoi(c.Param("user_id"))
+		var reqBody enrollStudentRequest
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := a.EnrollStudent(reqBody.CourseID, reqBody.StudentID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		user, err := a.GetUser(int64(userID))
-
-		if errors.Is(err, app.DefunctUser) {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, UserErrorResponse(err))
-			return
-		}
-
-		c.JSON(http.StatusOK, UserSuccessResponse(&user))
+		c.JSON(http.StatusOK, gin.H{"message": "Student enrolled successfully"})
 	}
 }
 
-func deleteUser(a app.App) gin.HandlerFunc {
+func unenrollStudent(a app.App) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, err := strconv.Atoi(c.Param("user_id"))
+		var reqBody unenrollStudentRequest
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := a.UnenrollStudent(reqBody.CourseID, reqBody.StudentID)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		err = a.DeleteUser(int64(userID))
+		c.JSON(http.StatusOK, gin.H{"message": "Student unenrolled successfully"})
+	}
+}
 
-		if errors.Is(err, app.DefunctUser) {
-			c.JSON(http.StatusBadRequest, UserErrorResponse(err))
-			return
-		} else if err != nil {
-			c.JSON(http.StatusInternalServerError, UserErrorResponse(err))
+func createAssignment(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody createAssignmentRequest
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		c.JSON(http.StatusOK, UserSuccessResponse(&users.User{}))
+		assignment, err := a.CreateAssignment(reqBody.CourseID, reqBody.Title, reqBody.Description, reqBody.DueDate)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, AssignmentSuccessResponse(&assignment))
+	}
+}
+
+func submitAssignment(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		assignmentId, err := strconv.ParseInt(c.Param("assignmentId"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid assignment ID"})
+			return
+		}
+
+		studentId, err := strconv.ParseInt(c.Param("studentId"), 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid student ID"})
+			return
+		}
+
+		file, err := c.FormFile("file")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
+			return
+		}
+
+		fileData, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to open file"})
+			return
+		}
+		defer fileData.Close()
+
+		fileBytes, err := ioutil.ReadAll(fileData)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to read file"})
+			return
+		}
+
+		err = a.SubmitAssignment(assignmentId, studentId, fileBytes, file.Filename)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Assignment submitted successfully"})
+	}
+}
+
+func gradeAssignment(a app.App) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var reqBody gradeAssignmentRequest
+
+		if err := c.ShouldBindJSON(&reqBody); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		err := a.GradeAssignment(reqBody.AssignmentID, reqBody.TeacherID, reqBody.StudentID, reqBody.Grade, reqBody.Feedback)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Assignment graded successfully"})
 	}
 }
