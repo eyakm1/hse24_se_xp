@@ -12,9 +12,9 @@ func TestCreateUser(t *testing.T) {
 
 	createdUser, err := client.CreateUser("Test User", "test@testing.ru", "student")
 	assert.NoError(t, err)
-	assert.Equal(t, createdUser.Name, "Test User")
-	assert.Equal(t, createdUser.Email, "test@testing.ru")
-	assert.Equal(t, createdUser.Role, "student")
+	assert.Equal(t, "Test User", createdUser.Name)
+	assert.Equal(t, "test@testing.ru", createdUser.Email)
+	assert.Equal(t, "student", createdUser.Role)
 }
 
 func TestCreateCourse(t *testing.T) {
@@ -25,8 +25,8 @@ func TestCreateCourse(t *testing.T) {
 
 	course, err := client.CreateCourse("Test Course", createdTeacher.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, course.Name, "Test Course")
-	assert.Equal(t, course.TeacherID, createdTeacher.ID)
+	assert.Equal(t, "Test Course", course.Name)
+	assert.Equal(t, createdTeacher.ID, course.TeacherID)
 }
 
 func TestEnrollStudent(t *testing.T) {
@@ -46,7 +46,7 @@ func TestEnrollStudent(t *testing.T) {
 
 	students, err := client.ListStudents(course.ID)
 	assert.NoError(t, err)
-	assert.Contains(t, students, createdStudent)
+	assert.Contains(t, students.Data, createdStudent)
 }
 
 func TestCreateAssignment(t *testing.T) {
@@ -61,10 +61,10 @@ func TestCreateAssignment(t *testing.T) {
 	dueDate := time.Now().AddDate(0, 0, 7)
 	assignment, err := client.CreateAssignment(course.ID, "Test Assignment", "This is a test assignment", dueDate)
 	assert.NoError(t, err)
-	assert.Equal(t, assignment.Title, "Test Assignment")
-	assert.Equal(t, assignment.Description, "This is a test assignment")
-	assert.Equal(t, assignment.CourseID, course.ID)
-	assert.WithinDuration(t, assignment.DueDate, dueDate, time.Second)
+	assert.Equal(t, "Test Assignment", assignment.Title)
+	assert.Equal(t, "This is a test assignment", assignment.Description)
+	assert.Equal(t, course.ID, assignment.CourseID)
+	assert.WithinDuration(t, dueDate, assignment.DueDate, time.Second)
 }
 
 func TestSubmitAssignment(t *testing.T) {
@@ -93,7 +93,7 @@ func TestSubmitAssignment(t *testing.T) {
 
 	submissions, err := client.ListSubmissions(assignment.ID)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, submissions)
+	assert.NotEmpty(t, submissions.Data)
 }
 
 func TestGradeAssignment(t *testing.T) {
@@ -125,6 +125,6 @@ func TestGradeAssignment(t *testing.T) {
 
 	submission, err := client.GetSubmission(assignment.ID, createdStudent.ID)
 	assert.NoError(t, err)
-	assert.Equal(t, submission.Grade, 95)
-	assert.Equal(t, submission.Feedback, "Great job!")
+	assert.Equal(t, 95, submission.Grade)
+	assert.Equal(t, "Great job!", submission.Feedback)
 }

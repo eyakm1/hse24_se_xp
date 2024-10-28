@@ -19,6 +19,11 @@ var (
 	ErrForbidden  = fmt.Errorf("forbidden")
 )
 
+type testClient struct {
+	client  *http.Client
+	BaseURL string
+}
+
 type userResponse struct {
 	ID    int64  `json:"id"`
 	Name  string `json:"name"`
@@ -27,12 +32,11 @@ type userResponse struct {
 }
 
 type courseResponse struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	TeacherID int64  `json:"teacher_id"`
+	ID               int64   `json:"id"`
+	Name             string  `json:"name"`
+	TeacherID        int64   `json:"teacher_id"`
+	EnrolledStudents []int64 `json:"enrolled_students"`
 }
-
-type usersResponse []userResponse
 
 type assignmentResponse struct {
 	ID          int64     `json:"id"`
@@ -46,16 +50,17 @@ type submissionResponse struct {
 	ID           int64  `json:"id"`
 	AssignmentID int64  `json:"assignment_id"`
 	StudentID    int64  `json:"student_id"`
-	FileURL      string `json:"file_url"`
+	FileName     string `json:"file_name"`
 	Grade        int    `json:"grade"`
 	Feedback     string `json:"feedback"`
 }
 
-type submissionsResponse []submissionResponse
+type usersResponse struct {
+	Data []userResponse `json:"data"`
+}
 
-type testClient struct {
-	client  *http.Client
-	BaseURL string
+type submissionsResponse struct {
+	Data []submissionResponse `json:"data"`
 }
 
 func GetTestClient() *testClient {

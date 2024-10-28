@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	gPort = ":50054"
 	hPort = ":9000"
 )
 
