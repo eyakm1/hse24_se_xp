@@ -108,12 +108,24 @@ func (tc *testClient) CreateUser(name, email, role string) (userResponse, error)
 		"email": email,
 		"role":  role,
 	}
-	bodyBytes, _ := json.Marshal(body)
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/users", tc.BaseURL), bytes.NewBuffer(bodyBytes))
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to marshal: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, tc.BaseURL+"/api/v1/users", bytes.NewReader(bodyBytes))
+	if err != nil {
+		return userResponse{}, fmt.Errorf("unable to create request: %w", err)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	var resp userResponse
-	err := tc.getResponse(req, &resp)
+	err = tc.getResponse(req, &resp)
+	if err != nil {
+		return userResponse{}, err
+	}
+
 	return resp, err
 }
 
